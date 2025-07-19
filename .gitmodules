@@ -1,0 +1,3 @@
+[submodule "NBTWriter-of-Toki"]
+	path = NBTWriter-of-Toki
+	url = git@github.com:ToKiNoBug/NBTWriter-of-Toki.git
