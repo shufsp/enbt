@@ -89,7 +89,6 @@ void ips_to_dat(std::istream* ip_stream, const std::string_view output_path, con
 }
 
 int main(int argc, char** argv) {
-	// TODO take input from pipe i.e. program | enbt
 	const std::string_view program = argv[0];
 	argv++;
 	argc--;
