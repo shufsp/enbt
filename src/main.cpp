@@ -43,9 +43,14 @@ void parse_arg(const std::string_view cmd,
 
 
 void ips_to_dat(std::istream* ip_stream, const std::string_view output_path, const std::string_view format) {
-	if (output_path.empty()) {
+	fs::path output_fs_path = output_path;
+	if (output_fs_path.empty()) {
 		std::cout << "Output path is empty\n";
 		exit(1);
+	}
+
+	if (fs::is_directory(output_fs_path)) {
+		output_fs_path = output_fs_path / "servers.dat";	
 	}
 
 	std::stringstream buffer;
@@ -67,7 +72,7 @@ void ips_to_dat(std::istream* ip_stream, const std::string_view output_path, con
 		exit(1);
 	}
 
-	NBT::NBTWriter writer(output_path.data());
+	NBT::NBTWriter writer(output_fs_path.c_str());
 	writer.writeListHead("servers", NBT::idCompound, servers.size());
 	for (const nbtserver& server : servers) {	
 		#if 0
