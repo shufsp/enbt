@@ -10,6 +10,13 @@
 
 namespace fs = std::filesystem;
 
+#ifdef _WIN32
+#include <io.h> // _isatty
+#define isatty _isatty
+#else
+#include <unistd.h> // isatty
+#endif
+
 void usage(const std::string_view program) {
 	std::cout << "Usage: " << program << " -i <ip_list_input> [options]\n";
 	std::cout << "Options\n";
@@ -35,24 +42,14 @@ void parse_arg(const std::string_view cmd,
 }
 
 
-void ips_to_dat(const std::string_view input_path, const std::string_view output_path, const std::string_view format) {
-	if (input_path.empty()) {
-		std::cout << "Input path is empty\n";
-		exit(1);
-	}
+void ips_to_dat(std::istream* ip_stream, const std::string_view output_path, const std::string_view format) {
 	if (output_path.empty()) {
 		std::cout << "Output path is empty\n";
 		exit(1);
 	}
 
-	std::ifstream ips_stream(input_path.data());
-	if (!ips_stream.is_open()) {
-		std::cout << "Unable to open input file for reading (" << input_path << ")\n";
-		exit(1);
-	}
-
 	std::stringstream buffer;
-	buffer << ips_stream.rdbuf();
+	buffer << ip_stream->rdbuf();
 
 	const std::string ips_content = buffer.str();
 	const std::vector<nbtserver> servers = [&](){
@@ -89,17 +86,11 @@ void ips_to_dat(const std::string_view input_path, const std::string_view output
 	}
 	writer.endCompound();
 	writer.close();
-	ips_stream.close();
 }
 
 int main(int argc, char** argv) {
 	// TODO take input from pipe i.e. program | enbt
-
 	const std::string_view program = argv[0];
-	if (argc < 2) {
-		usage(program);
-		exit(1);
-	}
 	argv++;
 	argc--;
 
@@ -126,17 +117,36 @@ int main(int argc, char** argv) {
 		argc--;
 	}
 
+	std::ifstream ip_file_stream;
+	std::istream* ip_stream;
+	bool cin_piped = !isatty(fileno(stdin));
 	if (input_path.empty()) {
-		usage(program);
-		exit(1);
+		if (!cin_piped) {
+			std::cout << "No input data provided\n";
+			exit(1);
+		}
+		// input is piped. -i is ignored
+		ip_stream = &std::cin;
+	} else {
+		ip_file_stream.open(input_path.data());
+		if (!ip_file_stream.is_open()) {
+			std::cout << "Unable to open input file for reading (" << input_path << ")\n";
+			exit(1);
+		}
+		ip_stream = &ip_file_stream;
 	}
 
-	if (!fs::exists(input_path)) {
+	if (!fs::exists(input_path) && !cin_piped) {
 		std::cout << "Can't load '" << input_path << "': file doesn't exist\n";
 		exit(1);
 	}
 
 	if (!explicit_extension) {
+		if (cin_piped) {
+			std::cout << "You're piping data to enbt, but I have no idea what format it is. You need to provide the '-t' option\n";
+			exit(1);
+		}
+
 		// work how its expected to unless overriden with -t
 		auto ext = fs::path(input_path).extension().string();
 		if (ext.empty()) {
@@ -151,7 +161,7 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 	
-	ips_to_dat(input_path, output_path, input_type);
+	ips_to_dat(ip_stream, output_path, input_type);
 	
 	return 0;
 }
