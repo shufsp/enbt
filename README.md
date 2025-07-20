@@ -43,6 +43,13 @@ enbt -i servers -t json
 ```
 enbt -i servers -t csv
 ```
+Generate servers.dat with piped input
+```
+echo "{\"servers\": [{\"ip\": \"1.0.0.1\", \"name\": \"Piped server\", \"icon\": \"/9j/4AAQS\", \"accept_textures\": true}]}" | enbt -t json
+```
+```
+echo "Server1,/9j/4AAQSkZJRgABAQIAJQAl,153.74.117.133,1" | enbt -t csv
+```
 
 ## Input Format
 Here are some examples for how you should format your toml, csv, and json to pass into enbt.
