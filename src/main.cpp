@@ -72,7 +72,7 @@ void ips_to_dat(std::istream* ip_stream, const std::string_view output_path, con
 		exit(1);
 	}
 
-	NBT::NBTWriter writer(output_fs_path.c_str());
+	NBT::NBTWriter writer(output_fs_path.string().data());
 	writer.writeListHead("servers", NBT::idCompound, servers.size());
 	for (const nbtserver& server : servers) {	
 		#if 0
