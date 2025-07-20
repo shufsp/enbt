@@ -9,19 +9,19 @@ std::vector<nbtserver> parse_servers_json(const std::string& content) {
 	using json = nlohmann::json;
 	if (content.empty()) {
 		std::cout << "json file content is empty. no servers.dat created\n";
-		exit(1);
+		return {};
 	}
 	
 	if (!json::accept(content)) {
 		// TODO show where its malformed/show error from nlohmann json?
 		std::cout << "json is malformed. validate the syntax and try again\n";
-		exit(1);
+		return {};
 	}
 
 	json config = json::parse(content);
 	if (!config.contains("servers") || !config["servers"].is_array()) {
 		std::cout << "json is malformed. requires a 'servers' array\n";
-		exit(1);
+		return {};
 	}
 
 	std::vector<nbtserver> servers{};
@@ -48,20 +48,20 @@ std::vector<nbtserver> parse_servers_json(const std::string& content) {
 std::vector<nbtserver> parse_servers_toml(const std::string& content) {
 	if (content.empty()) {
 		std::cout << "toml file content is empty. no servers.dat created\n";
-		exit(1);
+		return {};
 	}
 
-  	const auto maybe_parsed = toml::try_parse_str(content.data());
+  	const auto maybe_parsed = toml::try_parse_str(content);
 	if (!maybe_parsed.is_ok()) {
 		// TODO show error source from try_parse?
 		std::cout << "toml file is malformed. validate the syntax and try again\n"; 
-		exit(1);
+		return {};
 	}
 
 	auto config = maybe_parsed.unwrap();
 	if (!config.at("servers").is_array_of_tables()) {
 		std::cout << "toml is malformed. requires a 'servers' table as an array of tables\n";
-		exit(1);
+		return {};
 	}
 
 	auto& server_tables = config["servers"].as_array();
@@ -69,11 +69,21 @@ std::vector<nbtserver> parse_servers_toml(const std::string& content) {
 	servers.reserve(server_tables.size());
 
 	for (const auto& server : server_tables) {
+		auto icon = toml::find_or<std::string>(server, "icon", "");
+		auto ip = toml::find_or<std::string>(server, "ip", "");
+		auto name = toml::find_or<std::string>(server, "name", "");
+		auto accept_textures = toml::find_or<bool>(server, "accept_textures", false);
+
+		if (icon.empty() || ip.empty() || name.empty()) {
+			std::cout << "warning: a server entry is missing required fields. it will not be added to the servers list\n";
+			continue;
+		}
+
 		servers.emplace_back(nbtserver{
-			.icon = toml::find<std::string>(server, "icon"),
-			.ip = toml::find<std::string>(server, "ip"),
-			.name = toml::find<std::string>(server, "name"),
-			.accept_textures = toml::find<bool>(server, "accept_textures")
+			.icon = icon,
+			.ip = ip,
+			.name = name,
+			.accept_textures = accept_textures
 		});
 	}
 	
@@ -83,7 +93,7 @@ std::vector<nbtserver> parse_servers_toml(const std::string& content) {
 std::vector<nbtserver> parse_servers_csv(const std::string& content) {
 	if (content.empty()) {
 		std::cout << "csv file content is empty. no servers.dat created\n";
-		exit(1);
+		return {};
 	}
 	
 	const size_t server_count = std::count(content.begin(), content.end(), '\n');

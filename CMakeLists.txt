@@ -9,3 +9,4 @@ include_directories("include")
 include_directories("include/thirdparty")
 target_link_libraries(enbt)
 
+add_subdirectory(tests)
