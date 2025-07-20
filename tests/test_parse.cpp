@@ -62,10 +62,10 @@ void test_parse_csv_load(void) {
 
 		for (size_t i = 0; i < servers.size(); ++i) {
 			std::string name = "Server" + std::to_string(i+1);
-			TEST_CHECK_(servers[i].icon == "soidfjsiodf", "icon was %s", servers[i].icon);
-			TEST_CHECK_(servers[i].name == name, "name was %s", servers[i].name);
-			TEST_CHECK_(servers[i].ip == "1.0.0.1", "ip was %s", servers[i].ip);
-			TEST_CHECK_(servers[i].accept_textures, "accept_textures was %c", servers[i].accept_textures);
+			TEST_CHECK_(servers[i].icon == "soidfjsiodf", "icon was %s", servers[i].icon.c_str());
+			TEST_CHECK_(servers[i].name == name, "name was %s", servers[i].name.c_str());
+			TEST_CHECK_(servers[i].ip == "1.0.0.1", "ip was %s", servers[i].ip.c_str());
+			TEST_CHECK_(servers[i].accept_textures, "accept_textures was %d", servers[i].accept_textures);
 		}
 	});
 	TEST_CHECK(output != "csv file content is empty. no servers.dat created\n");
