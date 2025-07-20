@@ -65,7 +65,9 @@ void ips_to_dat(std::istream* ip_stream, const std::string_view output_path, con
 		else if (format == "json")
 			return parse_servers_json(ips_content);
 		return std::vector<nbtserver>{};
-	}(); if (servers.empty()) {
+	}(); 
+
+	if (servers.empty()) {
 		std::cout << "There are no servers in your input file\n";
 		exit(1);
 	}
