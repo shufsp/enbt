@@ -64,6 +64,7 @@ class NBTWriter
 		bool isOpen;
 		bool isBE;
         std::fstream *File;
+		bool Stdout_output;
 		unsigned long long ByteCount;
 		short top;
 		char CLA[TwinStackSize];
@@ -84,7 +85,7 @@ class NBTWriter
 		int emergencyFill();
 	public:
 		//Construct&deConstruct
-		NBTWriter(const char*path);
+		NBTWriter(const char*path, bool stdout_output);
 		~NBTWriter();
         NBTWriter();
         void open(const char*path);
@@ -92,6 +93,9 @@ class NBTWriter
 		bool allowEmergencyFill;
 		//WriterFun
 
+
+	template<typename T>
+	void write(T* data, size_t len);
 
         int writeLongDirectly(const char*Name,long long value);
 
