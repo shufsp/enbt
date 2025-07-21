@@ -15,9 +15,10 @@ make
 ```
 Usage: ./enbt -i <ip_list_input> [options]
 Options
-	-i <input_file>			Input file with list of ips
-	-t <csv|toml|json>		Specifies the type of input file
-	-o <output_path>		Specifies the output. Default is 'servers.dat'
+        -i <input_file>                 Input file with list of ips
+        -t <csv|toml|json>              Specifies the type of input file
+        -o <output_path>                Specifies the output. Default is 'servers.dat'
+        --stdout                        Outputs the servers nbt to stdout. Equivalent to -o stdout
 ```
 
 ### Examples
@@ -33,15 +34,8 @@ enbt -o "some_path/.minecraft/servers.dat" -i servers.toml
 enbt -o "custom_name.dat" -i ips.json
 ```
 If the file doesn't have an extension, you can provide the `-t` option.
-Several formats are supported!
 ```
 enbt -i servers -t toml
-```
-```
-enbt -i servers -t json
-``` 
-```
-enbt -i servers -t csv
 ```
 Generate servers.dat with piped input
 ```
@@ -50,10 +44,19 @@ echo "{\"servers\": [{\"ip\": \"1.0.0.1\", \"name\": \"Piped server\", \"icon\":
 ```
 echo "Server1,/9j/4AAQSkZJRgABAQIAJQAl,153.74.117.133,1" | enbt -t csv
 ```
+Convert input to servers.dat nbt and output directly to terminal
+```
+$ echo "Server1,/9j/4AAQSkZJRgABAQIAJQAl,153.74.117.133,1" | enbt -t csv --stdout
 
+        servers
+nameServericon/9j/4AAQSkZJRgABAQIAJQAip153.74.117.133acceptTextures
+```
+```
+echo "Server1,/9j/4AAQSkZJRgABAQIAJQAl,153.74.117.133,1" | enbt -t csv --stdout >> servers.out
+```
 ## Input Format
 Here are some examples for how you should format your toml, csv, and json to pass into enbt.
-The required properties [according to minecraft wiki](https://minecraft.wiki/w/Servers.dat_format) are:
+The properties [according to minecraft wiki](https://minecraft.wiki/w/Servers.dat_format) are:
 
 - icon			: Base64-encoded PNG data of the server icon.
 - ip 			: The IP address of the server.
@@ -61,6 +64,7 @@ The required properties [according to minecraft wiki](https://minecraft.wiki/w/S
 - acceptTextures 	: 1 or 0 (true/false) - 0 if the player has selected Never when prompted to install a server resource pack.
 
 The base64 encoded strings below are shortened for example purposes.
+If a server entry is missing a required property, it will be skipped and not outputted into the resulting servers.dat file.
 
 ### CSV
 ```csv
