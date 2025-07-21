@@ -26,12 +26,6 @@ This file is part of SlopeCraft.
 #include "NBTWriter.h"
 #include <iostream>
 
-#ifdef _WIN32
-    #include <io.h>
-    #include <fcntl.h>
-    _setmode(_fileno(stdout), _O_BINARY);
-#endif
-
 using namespace NBT;
 
 template <typename T>
