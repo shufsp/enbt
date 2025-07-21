@@ -106,12 +106,18 @@ std::vector<nbtserver> parse_servers_csv(const std::string& content) {
 	while (std::getline(stream, line)) {
 		// get nbt properties for this server by splitting delimiter
 		// Example: Server Name,base6409ujisdfskdf,127.0.0.1,0
-		std::string items[4]{};
+		std::vector<std::string> items{};
 		for (std::size_t i = 0, pos = 0; pos < line.size(); ++i) {
 			auto const next_pos = std::find_if(line.begin() + pos, line.end(), [](auto& c){return c == ','||c=='|'||c==';';}) - line.begin();
-			items[i] = line.substr(pos, next_pos - pos);
+			items.push_back(line.substr(pos, next_pos - pos));
 			pos = next_pos == line.size() ? line.size() : next_pos + 1;
 		}	
+
+		if (items.size() < 4) {
+			std::cout << "warning: a server entry is missing required fields. it will not be added to the servers list\n";
+			continue;
+		}
+
 		servers.emplace_back(nbtserver{ 
 			.icon = items[1], 
 			.ip = items[2], 
