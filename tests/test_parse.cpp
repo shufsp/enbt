@@ -17,14 +17,20 @@ static std::string capture_output(const std::function<void()>& fn) {
     return oss.str();
 }
 
-std::jmp_buf jump_buffer;
-
 void test_parse_csv_empty(void) {
 	std::string output = capture_output([&](){
 		std::vector<nbtserver> servers = parse_servers_csv("");
 		TEST_CHECK(servers.empty());
 	});
 	TEST_CHECK(output == "csv file content is empty. no servers.dat created\n");
+}
+
+void test_parse_csv_missing_property(void) {
+	std::string output = capture_output([&](){
+		std::vector<nbtserver> servers = parse_servers_csv("Server%c%c1.0.0.1%c1");
+		TEST_CHECK(servers.empty());
+	});
+	TEST_CHECK(output == "warning: a server entry is missing required fields. it will not be added to the servers list\n");
 }
 
 void test_parse_csv_delims(void) {
@@ -234,6 +240,7 @@ TEST_LIST = {
    { "Parse CSV - empty", test_parse_csv_empty },
    { "Parse CSV - delims", test_parse_csv_delims },
    { "Parse CSV - load", test_parse_csv_load },
+   { "Parse CSV - missing property", test_parse_csv_missing_property },
    { "Parse TOML - empty", test_parse_toml_empty },
    { "Parse TOML - when servers is not a table", test_parse_toml_servers_not_a_table },
    { "Parse TOML - missing property", test_parse_toml_servers_entry_missing_property },
