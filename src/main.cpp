@@ -23,6 +23,7 @@ void usage(const std::string_view program) {
 	std::cout << "\t-i <input_file>\t\t\tInput file with list of ips\n";
 	std::cout << "\t-t <csv|toml|json>\t\tSpecifies the type of input file\n";
 	std::cout << "\t-o <output_path>\t\tSpecifies the output. Default is 'servers.dat'\n";
+	std::cout << "\t--stdout\t\t\tOutputs the servers nbt to stdout. Equivalent to -o stdout\n";
 }
 
 void parse_arg(const std::string_view cmd, 
@@ -72,7 +73,7 @@ void ips_to_dat(std::istream* ip_stream, const std::string_view output_path, con
 		exit(1);
 	}
 
-	NBT::NBTWriter writer(output_fs_path.string().data());
+	NBT::NBTWriter writer(output_fs_path.string().data(), output_fs_path == "stdout");
 	writer.writeListHead("servers", NBT::idCompound, servers.size());
 	for (const nbtserver& server : servers) {	
 		#if 0
@@ -101,14 +102,21 @@ int main(int argc, char** argv) {
 	std::string input_path{};
 	std::string output_path = "servers.dat";	
 	std::string input_type = "csv";
+	bool output_to_stdout = false;
 	bool explicit_extension = false;
 
 	while (argc > 0) {
 		const std::string_view cmd = argv[0];
-		if (cmd == "-i") {
+
+		if (cmd == "-?" || cmd == "--help") {
+			usage(program);
+			exit(0);
+		} else if (cmd == "-i") {
 			parse_arg(cmd, input_path, "", &argc, &argv, true);	
 		} else if (cmd == "-o") {
 			parse_arg(cmd, output_path, "servers.dat", &argc, &argv, true);
+		} else if (cmd == "--stdout") {
+			output_to_stdout = true;
 		} else if (cmd == "-t") {
 			parse_arg(cmd, input_type, "csv", &argc, &argv, true);
 			explicit_extension = true;
@@ -119,6 +127,10 @@ int main(int argc, char** argv) {
 		}
 		argv++;
 		argc--;
+	}
+
+	if (output_to_stdout) {
+		output_path = "stdout"; //--stdout overrides -o
 	}
 
 	std::ifstream ip_file_stream;

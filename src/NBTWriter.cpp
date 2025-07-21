@@ -56,14 +56,17 @@ bool NBT::isSysBE()
     return false;
 }
 
-NBTWriter::NBTWriter(const char*path)
+NBTWriter::NBTWriter(const char*path, bool stdout_output)
 {
+    Stdout_output = stdout_output;
     allowEmergencyFill=true;
     isBE=isSysBE();
     ByteCount=0;
-    File=new std::fstream(path,std::ios::out|std::ios::binary);
+    if (!Stdout_output) {
+    	File=new std::fstream(path,std::ios::out|std::ios::binary);
+    }
         char temp[3]={10,0,0};
-        File->write(temp,3);ByteCount+=3;
+        this->write(temp,3);ByteCount+=3;
     isOpen=true;
     for(top=0;top<TwinStackSize;top++)
     {
@@ -82,7 +85,7 @@ NBTWriter::NBTWriter()
     ByteCount=0;
     File=NULL;//new fstream(path,ios::out|ios::binary);
         //char temp[3]={10,0,0};
-        //File->write(temp,3);ByteCount+=3;
+        //this->write(temp,3);ByteCount+=3;
     isOpen=false;
     for(top=0;top<TwinStackSize;top++)
     {
@@ -94,6 +97,15 @@ NBTWriter::NBTWriter()
 
 }
 
+template<typename T>
+void NBTWriter::write(T* data, size_t len) {
+	if (Stdout_output) {
+		std::fwrite(data, sizeof(T), len, stdout);		
+	} else {
+		File->write(reinterpret_cast<const char*>(data), sizeof(T)*len);
+	}
+}
+
 void NBTWriter::open(const char*path)
 {
     if(isOpen)
@@ -102,7 +114,7 @@ void NBTWriter::open(const char*path)
     }
     File=new std::fstream(path,std::ios::out|std::ios::binary);
     char temp[3]={10,0,0};
-    File->write(temp,3);ByteCount+=3;
+    this->write(temp,3);ByteCount+=3;
     isOpen=true;
 }
 
@@ -120,8 +132,10 @@ unsigned long long NBTWriter::close()
     {
         if(!isEmpty())emergencyFill();
 
-    File->write(&idEnd,1);ByteCount+=1;
-    File->close();}
+    this->write(&idEnd,1);ByteCount+=1;
+    if (!Stdout_output)
+    	File->close();
+    }
     return ByteCount;
 }
 
@@ -204,7 +218,7 @@ void NBTWriter:: elementWritten()
 
 int NBTWriter::writeEnd()
 {
-    File->write(&idEnd,1);
+    this->write(&idEnd,1);
     return 1;
 }
 
@@ -219,16 +233,16 @@ int NBTWriter::writeSingleTag(char typeId,const char*Name,T value)
     if (isInCompound())//写入为完整的Tag
     {
         //qDebug()<<"写入为文件夹内的id"<<(short)typeId;
-        File->write(&typeId,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(Name,realNameL);ThisCount+=realNameL;
-        File->write((char*)&value,sizeof(T));ThisCount+=sizeof(T);
+        this->write(&typeId,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(Name,realNameL);ThisCount+=realNameL;
+        this->write((char*)&value,sizeof(T));ThisCount+=sizeof(T);
     }
 
     if (isInList()&&typeMatch(typeId))//写入为列表中的tag
     {
         //qDebug()<<"写入为列表中的id"<<(short)typeId;
-        File->write((char*)&value,sizeof(T));ThisCount+=sizeof(T);
+        this->write((char*)&value,sizeof(T));ThisCount+=sizeof(T);
         elementWritten();
 
     }
@@ -248,16 +262,16 @@ int NBTWriter::writeLongDirectly(const char*Name,long long value)
     if (isInCompound())//写入为完整的Tag
     {
         //qDebug()<<"写入为文件夹内的id"<<(short)NBT::idLong;
-        File->write(&NBT::idLong,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(Name,realNameL);ThisCount+=realNameL;
-        File->write((char*)&value,sizeof(long long));ThisCount+=sizeof(long long);
+        this->write(&NBT::idLong,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(Name,realNameL);ThisCount+=realNameL;
+        this->write((char*)&value,sizeof(long long));ThisCount+=sizeof(long long);
     }
 
     if (isInList()&&typeMatch(NBT::idLong))//写入为列表中的tag
     {
         //qDebug()<<"写入为列表中的id"<<(short)NBT::idLong;
-        File->write((char*)&value,sizeof(long long));ThisCount+=sizeof(long long);
+        this->write((char*)&value,sizeof(long long));ThisCount+=sizeof(long long);
         elementWritten();
 
     }
@@ -276,9 +290,9 @@ int NBTWriter::writeCompound(const char*Name)
     }
     if(isInCompound())
     {
-        File->write(&idCompound,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(Name,realNameL);ThisCount+=realNameL;
+        this->write(&idCompound,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(Name,realNameL);ThisCount+=realNameL;
         push(idEnd,0);
         ByteCount+=ThisCount;
         return ThisCount;
@@ -320,11 +334,11 @@ int NBTWriter::writeListHead(const char*Name,char TypeId,int listSize)
 
     if(isInCompound())
     {
-        File->write(&idList,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(Name,realNameL);ThisCount+=realNameL;
-        File->write(&TypeId,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeListSize,sizeof(int));ThisCount+=sizeof(int);
+        this->write(&idList,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(Name,realNameL);ThisCount+=realNameL;
+        this->write(&TypeId,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeListSize,sizeof(int));ThisCount+=sizeof(int);
         push(TypeId,listSize);
         ByteCount+=ThisCount;
         if(listSize==0)elementWritten();
@@ -333,8 +347,8 @@ int NBTWriter::writeListHead(const char*Name,char TypeId,int listSize)
 
     if(isInList()&&typeMatch(idList))
     {
-        File->write(&TypeId,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeListSize,sizeof(int));ThisCount+=sizeof(int);
+        this->write(&TypeId,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeListSize,sizeof(int));ThisCount+=sizeof(int);
         push(TypeId,listSize);
         ByteCount+=ThisCount;
         if(listSize==0)elementWritten();
@@ -382,11 +396,11 @@ int NBTWriter::writeLongArrayHead(const char*Name,int arraySize)
 
     if(isInCompound())
     {
-        File->write(&idLongArray,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(Name,realNameL);ThisCount+=realNameL;
-        //File->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
+        this->write(&idLongArray,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(Name,realNameL);ThisCount+=realNameL;
+        //this->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
         push(idLong,arraySize);
         ByteCount+=ThisCount;
         if(arraySize==0)elementWritten();
@@ -395,8 +409,8 @@ int NBTWriter::writeLongArrayHead(const char*Name,int arraySize)
 
     if(isInList()&&typeMatch(idLongArray))
     {
-        //File->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
+        //this->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
         push(idLong,arraySize);
         ByteCount+=ThisCount;
         if(arraySize==0)elementWritten();
@@ -413,11 +427,11 @@ int NBTWriter::writeByteArrayHead(const char*Name,int arraySize)
 
     if(isInCompound())
     {
-        File->write(&idByteArray,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(Name,realNameL);ThisCount+=realNameL;
-        //File->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
+        this->write(&idByteArray,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(Name,realNameL);ThisCount+=realNameL;
+        //this->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
         push(idByte,arraySize);
         ByteCount+=ThisCount;
         if(arraySize==0)elementWritten();
@@ -426,8 +440,8 @@ int NBTWriter::writeByteArrayHead(const char*Name,int arraySize)
 
     if(isInList()&&typeMatch(idByteArray))
     {
-        //File->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
+        //this->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
         push(idByte,arraySize);
         ByteCount+=ThisCount;
         if(arraySize==0)elementWritten();
@@ -444,11 +458,11 @@ int NBTWriter::writeIntArrayHead(const char*Name,int arraySize)
 
     if(isInCompound())
     {
-        File->write(&idIntArray,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(Name,realNameL);ThisCount+=realNameL;
+        this->write(&idIntArray,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(Name,realNameL);ThisCount+=realNameL;
 
-        File->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
+        this->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
         push(idInt,arraySize);
         ByteCount+=ThisCount;
         if(arraySize==0)elementWritten();
@@ -457,8 +471,8 @@ int NBTWriter::writeIntArrayHead(const char*Name,int arraySize)
 
     if(isInList()&&typeMatch(idIntArray))
     {
-        //File->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
+        //this->write(&idLong,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeArraySize,sizeof(int));ThisCount+=sizeof(int);
         push(idInt,arraySize);
         ByteCount+=ThisCount;
         if(arraySize==0)elementWritten();
@@ -476,11 +490,11 @@ int NBTWriter::writeString(const char*Name,const char*value)
 
     if(isInCompound())
     {
-        File->write(&idString,sizeof(char));ThisCount+=sizeof(char);
-        File->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(Name,realNameL);ThisCount+=realNameL;
-        File->write((char*)&writeValL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(value,realValL);ThisCount+=realValL;
+        this->write(&idString,sizeof(char));ThisCount+=sizeof(char);
+        this->write((char*)&writeNameL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(Name,realNameL);ThisCount+=realNameL;
+        this->write((char*)&writeValL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(value,realValL);ThisCount+=realValL;
         ByteCount+=ThisCount;
         elementWritten();
         return ThisCount;
@@ -488,8 +502,8 @@ int NBTWriter::writeString(const char*Name,const char*value)
 
     if(isInList()&&typeMatch(idString))
     {
-        File->write((char*)&writeValL,sizeof(short));ThisCount+=sizeof(short);
-        File->write(value,realValL);ThisCount+=realValL;
+        this->write((char*)&writeValL,sizeof(short));ThisCount+=sizeof(short);
+        this->write(value,realValL);ThisCount+=realValL;
         ByteCount+=ThisCount;
         elementWritten();
         return ThisCount;
